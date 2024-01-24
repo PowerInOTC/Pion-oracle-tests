@@ -3,7 +3,7 @@ Muon Schnorr Signer is a server that run a Muon app and return a schnorr signatu
 ## Install
 
 ```
-$ git clone https://github.com/abramsymons/muon-schnorr-signer.git
+$ https://github.com/Pioner-io/Pion-oracle-tests.git
 $ npm install
 ```
 
