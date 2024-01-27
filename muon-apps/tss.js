@@ -1,11 +1,4 @@
 const { soliditySha3, schnorrVerifyWithNonceAddress } = MuonAppUtils
-const { BN, toBaseUnit, ethCall, Web3 } = MuonAppUtils;
-const HttpsProxyAgent = require('https-proxy-agent');
-const scale = new BN(toBaseUnit('1', 18))
-const ZERO = new BN(0)
-const scaleUp = (value) => new BN(toBaseUnit(String(value), 18))
-
-
 const TssApp = {
   APP_NAME: 'tss',
   useTss: true,

@@ -26,46 +26,58 @@ const PionerV1App = {
     },
 
     signParams: function (request, result) {
-        const currentTime = Math.floor(Date.now() / 1000);
+        const signTime = result.oldestTimestamp ? result.oldestTimestamp : Math.floor(Date.now() / 1000);
+
         switch (request.method) {
             case 'price':
                 return [
-                    { type: 'bytes32', value: result.asset1 },
-                    { type: 'bytes32', value: result.asset2 },
-                    { type: 'uint256', value: result.pairBid },
-                    { type: 'uint256', value: result.pairAsk },
-                    { type: 'uint256', value: result.confidence },
-                    { type: 'uint256', value: this.scaleUp(currentTime).toString() }
+                    { name:'asset1' ,type: 'bytes32', value: result.asset1 },
+                    { name:'asset2' ,type: 'bytes32', value: result.asset2 },
+                    { name:'pairBid' ,type: 'uint256', value: result.pairBid },
+                    { name:'pairAsk' ,type: 'uint256', value: result.pairAsk },
+                    { name:'pairAsk' ,type: 'uint256', value: result.confidence },
+                    { name:'signTime' ,type: 'uint256', value: signTime.toString() }
                 ];
         }
     },
 
     fetchPrices: async function (asset1, asset2) {
         const [prices1, prices2] = await Promise.all([this.fetchAssetPrices(asset1), this.fetchAssetPrices(asset2)]);
+        
+        console.log(prices1)
         const adjustedPrices1 = asset1 === 'hardusd' ? { avgBid: 1, avgAsk: 1 } : this.calculateAveragePrices(prices1);
         const adjustedPrices2 = asset2 === 'hardusd' ? { avgBid: 1, avgAsk: 1 } : this.calculateAveragePrices(prices2);
         const asset1Confidence = asset1 === 'hardusd' ? 0 : this.calculateConfidence(prices1);
         const asset2Confidence = asset2 === 'hardusd' ? 0 : this.calculateConfidence(prices2);
         const highestConfidence = Math.max(asset1Confidence, asset2Confidence);
-        
+        const oldestTimestamp = Math.min(result1.oldestTimestamp, result2.oldestTimestamp);
+
         return {
             pairBid: adjustedPrices1.avgBid / adjustedPrices2.avgBid,
             pairAsk: adjustedPrices1.avgAsk / adjustedPrices2.avgAsk,
-            confidence: Math.max(1 - highestConfidence / 100, 0)
+            confidence: Math.max(1 - highestConfidence / 100, 0),
+            oldestTimestamp
         };
     },
 
     fetchAssetPrices: async function (asset) {
-        if (asset === 'hardusd') return [{ bid: 1, ask: 1 }];
+        if (asset === 'hardusd') return { prices: [{ bid: 1, ask: 1, timestamp: null }], oldestTimestamp: null };
         const [assetType, assetSymbol] = asset.split('.');
         const apiConfigs = this.loadApiConfigsForType(assetType);
+        let oldestTimestamp = Infinity;
         const prices = [];
+
         for (const config of apiConfigs) {
             const formattedSymbol = this.formatSymbolForAPI(assetType, assetSymbol);
             const priceData = await this.fetchPriceFromAPI(config, formattedSymbol);
-            if (priceData) prices.push(priceData);
+            if (priceData) {
+                prices.push(priceData);
+                if (priceData.timestamp && priceData.timestamp < oldestTimestamp) {
+                    oldestTimestamp = priceData.timestamp;
+                }
+            }
         }
-        return prices;
+        return { prices, oldestTimestamp };
     },
 
     loadApiConfigsForType: function (assetType) {
@@ -92,12 +104,17 @@ const PionerV1App = {
     },
 
     fetchPriceFromAPI: async function (config, symbol) {
-        const url = `${config.url_before_asset}${symbol}${config.url_after_asset}`
+        const url = `${config.url_before_asset}${symbol}${config.url_after_asset}`;
         const response = await axios.get(url, agent ? { httpsAgent: agent } : {});
         const data = Array.isArray(response.data) ? response.data[0] : response.data;
+
+        const timestampField = config.time_field;
+        const timestamp = data[timestampField] ? parseInt(data[timestampField]) : null;
+
         return {
             bid: parseFloat(data[config.bid_field]),
-            ask: parseFloat(data[config.ask_field])
+            ask: parseFloat(data[config.ask_field]),
+            timestamp
         };
     },
 
