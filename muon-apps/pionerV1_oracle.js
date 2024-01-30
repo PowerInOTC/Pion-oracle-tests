@@ -15,12 +15,15 @@ const PionerV1App = {
             case 'price':
                 const { asset1, asset2 } = params;
                 const prices = await this.fetchPrices(asset1, asset2);
+                const isMarketOpen = this.isValidPriceData(prices, /* appropriate config */);
+
                 return {
                     asset1: this.convertToBytes32(asset1),
                     asset2: this.convertToBytes32(asset2),
                     pairBid: this.scaleUp(prices.pairBid).toString(),
                     pairAsk: this.scaleUp(prices.pairAsk).toString(),
                     confidence: this.scaleUp(prices.confidence).toString()
+
                 };
         }
     },
@@ -41,24 +44,26 @@ const PionerV1App = {
         }
     },
 
-    fetchPrices: async function (asset1, asset2) {
-        const [prices1, prices2] = await Promise.all([this.fetchAssetPrices(asset1), this.fetchAssetPrices(asset2)]);
-        
-        console.log(prices1)
-        const adjustedPrices1 = asset1 === 'hardusd' ? { avgBid: 1, avgAsk: 1 } : this.calculateAveragePrices(prices1);
-        const adjustedPrices2 = asset2 === 'hardusd' ? { avgBid: 1, avgAsk: 1 } : this.calculateAveragePrices(prices2);
-        const asset1Confidence = asset1 === 'hardusd' ? 0 : this.calculateConfidence(prices1);
-        const asset2Confidence = asset2 === 'hardusd' ? 0 : this.calculateConfidence(prices2);
-        const highestConfidence = Math.max(asset1Confidence, asset2Confidence);
-        const oldestTimestamp = Math.min(result1.oldestTimestamp, result2.oldestTimestamp);
+fetchPrices: async function (asset1, asset2) {
+    const [result1, result2] = await Promise.all([
+        this.fetchAssetPrices(asset1),
+        this.fetchAssetPrices(asset2)
+    ]);
 
-        return {
-            pairBid: adjustedPrices1.avgBid / adjustedPrices2.avgBid,
-            pairAsk: adjustedPrices1.avgAsk / adjustedPrices2.avgAsk,
-            confidence: Math.max(1 - highestConfidence / 100, 0),
-            oldestTimestamp
-        };
-    },
+    const adjustedPrices1 = asset1 === 'hardusd' ? { avgBid: 1, avgAsk: 1 } : this.calculateAveragePrices(result1.prices);
+    const adjustedPrices2 = asset2 === 'hardusd' ? { avgBid: 1, avgAsk: 1 } : this.calculateAveragePrices(result2.prices);
+    const asset1Confidence = asset1 === 'hardusd' ? 0 : this.calculateConfidence(result1.prices);
+    const asset2Confidence = asset2 === 'hardusd' ? 0 : this.calculateConfidence(result2.prices);
+    const highestConfidence = Math.max(asset1Confidence, asset2Confidence);
+    const oldestTimestamp = Math.min(result1.oldestTimestamp, result2.oldestTimestamp);
+
+    return {
+        pairBid: adjustedPrices1.avgBid / adjustedPrices2.avgBid,
+        pairAsk: adjustedPrices1.avgAsk / adjustedPrices2.avgAsk,
+        confidence: Math.max(1 - highestConfidence / 100, 0),
+        oldestTimestamp
+    };
+},
 
     fetchAssetPrices: async function (asset) {
         if (asset === 'hardusd') return { prices: [{ bid: 1, ask: 1, timestamp: null }], oldestTimestamp: null };
@@ -105,18 +110,42 @@ const PionerV1App = {
 
     fetchPriceFromAPI: async function (config, symbol) {
         const url = `${config.url_before_asset}${symbol}${config.url_after_asset}`;
-        const response = await axios.get(url, agent ? { httpsAgent: agent } : {});
-        const data = Array.isArray(response.data) ? response.data[0] : response.data;
-
-        const timestampField = config.time_field;
-        const timestamp = data[timestampField] ? parseInt(data[timestampField]) : null;
-
-        return {
-            bid: parseFloat(data[config.bid_field]),
-            ask: parseFloat(data[config.ask_field]),
-            timestamp
-        };
+        try {
+            const response = await axios.get(url, agent ? { httpsAgent: agent } : {});
+            const data = Array.isArray(response.data) ? response.data[0] : response.data;
+    
+            if (!this.isValidPriceData(data, config)) {
+                throw new Error(`Incomplete or invalid data received from proxy: ${proxyUrl}`);
+            }
+    
+            const timestampField = config.time_field;
+            const timestamp = data[timestampField] ? parseInt(data[timestampField]) : null;
+    
+            return {
+                bid: parseFloat(data[config.bid_field]),
+                ask: parseFloat(data[config.ask_field]),
+                timestamp
+            };
+        } catch (error) {
+            console.error(`Error fetching price from API: `, error);
+            return null;
+        }
     },
+    
+    isValidPriceData: function (data, config) {
+        const hasRequiredFields = data && 
+                                  data.hasOwnProperty(config.bid_field) && 
+                                  data.hasOwnProperty(config.ask_field) && 
+                                  data.hasOwnProperty(config.time_field);
+    
+        if (!hasRequiredFields) return false;
+    
+        const bidAskValid = data[config.bid_field] != null && data[config.ask_field] != null;
+        const timestampValid = data[config.time_field] != null && parseInt(data[config.time_field]) >= 10000;
+    
+        return bidAskValid && timestampValid;
+    },
+    
 
     calculateAveragePrices: function (prices) {
         const totalBid = prices.reduce((sum, price) => sum + (price ? price.bid : 0), 0);
@@ -141,6 +170,7 @@ const PionerV1App = {
         const askSpread = ((maxAsk - minAsk) / minAsk) * 100;
         return Math.max(bidSpread, askSpread);
     },
+    
 
     convertToBytes32: function (str) {
         const hex = Web3.utils.toHex(str);

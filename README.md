@@ -33,7 +33,7 @@ $body = @{
     app = "pionerV1_oracle"
     method = "price"
     params = @{
-        asset1 = "usstock.aapl"
+        asset1 = "fx.eurusd"
         asset2 = "fx.eurusd"
     }
 } | ConvertTo-Json
