@@ -25,30 +25,14 @@ Run the server using:
 ```
 npm start
 ```
+Open a new terminal
+```
+node "./test/test.js"
+```
 
 ## Call Oracle
 
-```
-$body = @{
-    app = "pionerV1_oracle"
-    method = "price"
-    params = @{
-        asset1 = "usstock.aapl"
-        asset2 = "fx.eurusd"
-        requestPairBid = "171630166706844450000"
-        requestPairAsk = "171651266462154440000"
-        requestConfidence = "1000000000000000000"
-        requestSignTime = "1706921996368"
-    }
-} | ConvertTo-Json
 
-$response = Invoke-RestMethod -Uri http://localhost:3000/v1/ -Method Post -Body $body -ContentType "application/json"
-
-# Access and print the data within response.result.data
-$data = $response.result.data
-Write-Host "Data within response.result.data:"
-$data | ConvertTo-Json
-```
 
 
 > **_Security Note:_** Although having appId as a parameter in the signature prevents using signatures generated for a different app in other apps, but it's still recommened to not use same server with same key for running multiple apps.
