@@ -33,8 +33,12 @@ $body = @{
     app = "pionerV1_oracle"
     method = "price"
     params = @{
-        asset1 = "fx.eurusd"
+        asset1 = "usstock.aapl"
         asset2 = "fx.eurusd"
+        requestPairBid = "171630166706844450000"
+        requestPairAsk = "171651266462154440000"
+        requestConfidence = "1000000000000000000"
+        requestSignTime = "1706921996368"
     }
 } | ConvertTo-Json
 
