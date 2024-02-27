@@ -1,23 +1,24 @@
-//test.js
 const { makeApiCalls } = require('./proxyCall.js');
 const { callPion } = require('./pionCall.js');
 
 async function main() {
+    let price;
 
-    const price = await makeApiCalls(11, "forex.AUDUSD", "forex.EURUSD");
+    while (!price || price.pairBid === undefined) {
+        price = await makeApiCalls(200000, 5, "forex.AUDUSD", "forex.EURUSD");
+    }
 
-    console.log(price);
     const baseParams = {
         requestAsset1: "forex.AUDUSD",
         requestAsset2: "forex.EURUSD",
         requestPairBid: price.pairBid,
         requestPairAsk: price.pairAsk,
-        requestConfidence: price.confidence,
+        requestConfidence: 1e-3,
         requestSignTime: price.timestamp + 2000,
-        requestPrecision: "11",
+        requestPrecision: 18,
+        maxtimestampdiff: 200000,
     };
 
-    console.log(baseParams);
     callPion(baseParams);
 }
 

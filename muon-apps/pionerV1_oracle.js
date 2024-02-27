@@ -9,8 +9,8 @@ const PionerV1App = {
         let { method, data: { params = {} } } = request;
         switch (method) {
             case 'price':
-                const { requestAsset1, requestAsset2, requestPairBid, requestPairAsk, requestConfidence, requestSignTime, requestPrecision } = params;
-                const prices = await this.makeApiCalls(requestAsset1, requestAsset2, requestPrecision);
+                const { requestAsset1, requestAsset2, requestPairBid, requestPairAsk, requestConfidence, requestSignTime, requestPrecision, maxtimestampdiff } = params;
+                const prices = await this.makeApiCalls(maxtimestampdiff, requestPrecision, requestAsset1, requestAsset2);
 
                 return {
                     requestAsset1: this.convertToBytes32(requestAsset1),
@@ -22,8 +22,8 @@ const PionerV1App = {
                     confidence: prices.confidence.toString(),
                     requestConfidence: requestConfidence.toString(),
                     requestSignTime: requestSignTime.toString(),
+                    requestPrecision: requestPrecision.toString(),
                     proxyTimestamp: prices.timestamp.toString(),
-                    requestPrecision: requestPrecision.toString()
                 };
         }
     },
@@ -36,32 +36,42 @@ const PionerV1App = {
         const pairAskBN = new BN((result.pairAsk * 1e18).toFixed(0), 10);
         const confidenceBN = new BN((result.confidence * 1e18).toFixed(0), 10);
         const requestConfidenceBN = new BN((result.requestConfidence * 1e18).toFixed(0), 10);
-        const requestSignTimeBN = new BN((result.requestSignTime * 1e18).toFixed(0), 10);
-        const proxyTimestampBN = new BN((result.proxyTimestamp * 1e18).toFixed(0), 10);
-        const requestPrecisionBN = new BN(result.requestPrecision);
+        const requestSignTime = result.requestSignTime ;
+        const proxyTimestamp = result.proxyTimestamp ;
 
-        if (proxyTimestampBN.gt(requestSignTimeBN )) { throw new Error(`0x100`);}
         if (confidenceBN.gt(requestConfidenceBN)) {throw new Error(`0x101`);}
-        if (new BN(1e18).sub(pairBidBN.div(requestPairBidBN)).abs().gt(requestConfidenceBN)) throw new Error(`0x103`);
-        if (new BN(1e18).sub(pairAskBN.div(requestPairAskBN)).abs().gt(requestConfidenceBN)) throw new Error(`0x104`);
-        if (pairBidBN.gt(pairAskBN)) throw new Error(`0x105`);
+        if( proxyTimestamp > requestSignTime) { throw new Error(`0x102`);}
+
+        const precision = new BN(10).pow(new BN(18)); 
         
+        const diffBid = precision.sub(pairBidBN.mul(precision).div(requestPairBidBN)).abs();
+        const diffAsk = precision.sub(pairAskBN.mul(precision).div(requestPairAskBN)).abs();
+        
+        if (diffBid.gt(requestConfidenceBN)) {
+            throw new Error(`0x103`);
+        }
+        
+        if (diffAsk.gt(requestConfidenceBN)) {
+            throw new Error(`0x104`);
+        }   
+        const convertresult = this.convertToBytes32(result.requestAsset1);
+        const convertresult2 = this.convertToBytes32(result.requestAsset2);
+
         switch (request.method) {
             case 'price':
                 return [
-                    { name: 'requestAsset1', type: 'bytes32', value: result.asset1 },
-                    { name: 'requestAsset2', type: 'bytes32', value: result.asset2 },
+                    { name: 'requestAsset1', type: 'bytes32', value: convertresult },
+                    { name: 'requestAsset2', type: 'bytes32', value: convertresult2},
                     { name: 'requestPairBid', type: 'uint256', value: this.scaleUp(result.requestPairBid).toString() },
                     { name: 'requestPairAsk', type: 'uint256', value: this.scaleUp(result.requestPairAsk).toString() },
                     { name: 'requestConfidence', type: 'uint256', value: this.scaleUp(result.requestConfidence).toString() },
-                    { name: 'requestSignTime', type: 'uint256', value: this.scaleUp(result.requestSignTime).toString() },
-                    { name: 'requestSignTime', type: 'uint256', value: this.scaleUp(result.requestSignTime).toString() },
+                    { name: 'requestSignTime', type: 'uint256', value: result.requestSignTime},
                     { name: 'requestPrecision', type: 'uint256', value: this.scaleUp(result.requestPrecision).toString() }
                 ];
         }
     },
 
-    makeApiCalls: async function(abPrecision, asset1, asset2) {
+    makeApiCalls: async function(maxtimestampdiff, abPrecision, asset1, asset2) {
         try {
             const proxyVars = process.env.APPS_PIONERV1_VARS;
             const proxies = JSON.parse(proxyVars);
@@ -71,10 +81,10 @@ const PionerV1App = {
                 const proxy = proxies[`PROXY${i}`];
                 const apiKey = proxies[`PROXY${i}KEY`];
     
-                const apiUrl = `${proxy}${apiKey}&abprecision=${abPrecision}&confprecision=${abPrecision}&a=${asset1}&b=${asset2}`;
+                const apiUrl = `${proxy}${apiKey}&a=${asset1}&b=${asset2}&abprecision=${abPrecision}&confprecision=${abPrecision}&maxtimestampdiff=${maxtimestampdiff}`;
     
                 const timeoutConfig = { timeout: 500 };
-    
+                
                 responsePromises.push(axios.get(apiUrl, timeoutConfig).then(response => {
                     if (response.status === 200) {
                         const { pairBid, pairAsk, confidence, timestamp } = response.data;
@@ -93,11 +103,11 @@ const PionerV1App = {
                             return null;
                         }
                     } else {
-                        console.log(`Invalid response status from Proxy ${i}. Status: ${response.status}`);
+                        console.log(`Invalid response status from Proxy ${i}. Status: ${response.status}. url: ${apiUrl}`);
                         return null;
                     }
                 }).catch(error => {
-                    console.error(`Error with Proxy ${i}:`, error.message);
+                    console.error(`Error with Proxy : ${error.message}. Url ${apiUrl} :`);
                     return null;
                 }));
             }
@@ -159,3 +169,5 @@ const PionerV1App = {
     }
 
 };
+
+module.exports = PionerV1App;

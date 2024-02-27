@@ -2,7 +2,7 @@
 const axios = require('axios');
 require('dotenv').config();
 
-async function makeApiCalls(abPrecision, asset1, asset2) {
+async function makeApiCalls(maxtimestampdiff, abPrecision, asset1, asset2) {
     try {
         const proxyVars = process.env.APPS_PIONERV1_VARS;
         const proxies = JSON.parse(proxyVars);
@@ -11,8 +11,7 @@ async function makeApiCalls(abPrecision, asset1, asset2) {
         for (let i = 1; i <= parseInt(proxies.PROXY_NUMBERS); i++) {
             const proxy = proxies[`PROXY${i}`];
             const apiKey = proxies[`PROXY${i}KEY`];
-
-            const apiUrl = `${proxy}${apiKey}&abprecision=${abPrecision}&confprecision=${abPrecision}&a=${asset1}&b=${asset2}`;
+            const apiUrl = `${proxy}${apiKey}&a=${asset1}&b=${asset2}&abprecision=${abPrecision}&confprecision=${abPrecision}&maxtimestampdiff=${maxtimestampdiff}`;
 
             const timeoutConfig = { timeout: 500 };
 
@@ -90,13 +89,5 @@ async function makeApiCalls(abPrecision, asset1, asset2) {
     }
 }
 
-// Example usage:
-const abPrecision = 11;
-const asset1 = 'forex.EURUSD';
-const asset2 = 'forex.AUDUSD';
-
-makeApiCalls(abPrecision, asset1, asset2).then(result => {
-    console.log("Result:", result);
-});
 
 module.exports = { makeApiCalls };
