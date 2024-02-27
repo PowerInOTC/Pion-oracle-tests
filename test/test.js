@@ -8,7 +8,7 @@ async function main() {
         price = await makeApiCalls(200000, 5, "forex.AUDUSD", "forex.EURUSD");
     }
 
-    const baseParams = {
+    const baseParams2 = {
         requestAsset1: "forex.AUDUSD",
         requestAsset2: "forex.EURUSD",
         requestPairBid: price.pairBid,
@@ -18,6 +18,20 @@ async function main() {
         requestPrecision: 18,
         maxtimestampdiff: 200000,
     };
+
+    const baseParams = {
+        requestAsset1: "forex.AUDUSD",
+        requestAsset2: "forex.EURUSD",
+        requestPairBid: 0.60228,
+        requestPairAsk: 0.6023,
+        requestConfidence: 1,
+        requestSignTime:  1708996210000000,
+        requestPrecision: 18,
+        maxtimestampdiff: 200000,
+    };
+
+
+    
 
     callPion(baseParams);
 }
