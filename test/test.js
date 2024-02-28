@@ -1,5 +1,5 @@
 const { makeApiCalls } = require('./proxyCall.js');
-const { callPion } = require('./pionCall.js');
+const { callPionTest } = require('./pionCallTest.js');
 
 async function main() {
     let price;
@@ -8,7 +8,7 @@ async function main() {
         price = await makeApiCalls(200000, 5, "forex.AUDUSD", "forex.EURUSD");
     }
 
-    const baseParams2 = {
+    const baseParams = {
         requestAsset1: "forex.AUDUSD",
         requestAsset2: "forex.EURUSD",
         requestPairBid: price.pairBid,
@@ -18,22 +18,19 @@ async function main() {
         requestPrecision: 18,
         maxtimestampdiff: 200000,
     };
+    const requestAsset1 = baseParams.requestAsset1;
+    const requestAsset2 = baseParams.requestAsset2;
+    const requestPairBid = baseParams.requestPairBid;
+    const requestPairAsk = baseParams.requestPairAsk;
+    const requestConfidence = baseParams.requestConfidence;
+    const requestSignTime = baseParams.requestSignTime;
+    const requestPrecision = baseParams.requestPrecision;
+    const maxtimestampdiff = baseParams.maxtimestampdiff;
 
-    const baseParams = {
-        requestAsset1: "forex.AUDUSD",
-        requestAsset2: "forex.EURUSD",
-        requestPairBid: 0.60228,
-        requestPairAsk: 0.6023,
-        requestConfidence: 1,
-        requestSignTime:  1708996210000000,
-        requestPrecision: 18,
-        maxtimestampdiff: 200000,
-    };
-
-
+    //url with parameters
+    // http://127.0.0.1:3000/v1/?app=pionerV1_oracle&method=price&params[requestAsset1]=requestAsset1&params[requestAsset2]=requestAsset2&params[requestPairBid]=requestPairBid&params[requestPairAsk]=requestPairAsk&params[requestConfidence]=requestConfidence&params[requestSignTime]=requestSignTime&params[requestPrecision]=requestPrecision&params[maxtimestampdiff]=maxtimestampdiff
     
-
-    callPion(baseParams);
+    callPionTest(baseParams);
 }
 
 main();

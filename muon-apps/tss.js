@@ -1,4 +1,5 @@
 const { soliditySha3, schnorrVerifyWithNonceAddress } = MuonAppUtils
+
 const TssApp = {
   APP_NAME: 'tss',
   useTss: true,

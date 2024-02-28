@@ -1,7 +1,7 @@
-//pionCall.js
+//pionCallTest.js
 const axios = require('axios');
 const BigNumber = require('bignumber.js');
-async function callPion(params) {
+async function callPionTest(params) {
     const body = {
         app: "pionerV1_oracle",
         method: "price",
@@ -30,4 +30,4 @@ async function callPion(params) {
   }
   
 
-module.exports = { callPion };
+module.exports = { callPionTest };
