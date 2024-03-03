@@ -54,9 +54,8 @@ const PionerV1App = {
         if (diffAsk.gt(requestConfidenceBN)) {
             throw new Error(`0x104`);
         }   
-        const asset1Hex = this.convertToBytes32(result.requestAsset1);
-        const asset2Hex = this.convertToBytes32(result.requestAsset2);
-        const assetHex = asset1Hex + '/' + asset2Hex;
+
+        const assetHex = this.convertToBytes32(result.requestAsset1 + '/' + result.requestAsset2);
 
         switch (request.method) {
             case 'price':
