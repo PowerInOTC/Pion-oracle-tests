@@ -1,7 +1,7 @@
 const { getSign } = require('./getSign.js');
 
 async function example() {
-    const asset1 = "stock.nasdaq.AAPL";
+    const asset1 = "forex.GBPUSD";
     const asset2 = "forex.EURUSD";
     const requestPrecision = 18;
 

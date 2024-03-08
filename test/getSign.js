@@ -5,7 +5,7 @@ async function getSign(asset1, asset2, Precision) {
 
     while (!price || price.pairBid === undefined) {
         price = await makeApiCalls(200000, 5, asset1, asset2);
-    }
+    }   
 
     const baseParams = {
         requestAsset1: asset1,

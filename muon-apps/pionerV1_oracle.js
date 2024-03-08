@@ -55,8 +55,8 @@ const PionerV1App = {
             throw new Error(`0x104`);
         }   
 
+        
         const assetHex = this.convertToBytes32(result.requestAsset1 + '/' + result.requestAsset2);
-
         switch (request.method) {
             case 'price':
                 return [
@@ -159,7 +159,9 @@ const PionerV1App = {
     },
     
     convertToBytes32: function (str) {
-        const hex = Web3.utils.toHex(str);
+        const maxLength = 31;
+        const truncatedStr = str.slice(0, maxLength);
+        const hex = Web3.utils.toHex(truncatedStr);
         return Web3.utils.padRight(hex, 64);
     },
 
