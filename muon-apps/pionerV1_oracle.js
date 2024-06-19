@@ -9,8 +9,8 @@ const PionerV1App = {
         let { method, data: { params = {} } } = request;
         switch (method) {
             case 'price':
-                const { requestAsset1, requestAsset2, requestPairBid, requestPairAsk, requestConfidence, requestSignTime, requestPrecision, requestConfPrecision, maxTimestampDiff } = params;
-                const prices = await this.makeApiCalls(requestAsset1, requestAsset2, requestPrecision, requestConfPrecision, maxTimestampDiff);
+                const { requestUuid, requestAsset1, requestAsset2, requestPairBid, requestPairAsk, requestConfidence, requestSignTime, requestPrecision, requestConfPrecision, maxTimestampDiff } = params;
+                const prices = await this.makeApiCalls(requestUuid, requestAsset1, requestAsset2, requestPrecision, requestConfPrecision, maxTimestampDiff);
 
                 return {
                     requestAsset1: this.convertToBytes32(requestAsset1),
@@ -72,7 +72,7 @@ const PionerV1App = {
         }
     },
 
-    makeApiCalls: async function (asset1, asset2, abPrecision, confPrecision, maxTimestampDiff) {
+    makeApiCalls: async function (uuid, asset1, asset2, abPrecision, confPrecision, maxTimestampDiff) {
         const proxyVars = process.env.APPS_PIONERV1_PROXIES;
         const proxies = JSON.parse(proxyVars);
 
@@ -82,7 +82,7 @@ const PionerV1App = {
             const address = proxies[i].address;
             const key = proxies[i].key;
 
-            const apiUrl = `${address}${key}&a=${asset1}&b=${asset2}&abPrecision=${abPrecision}&confPrecision=${confPrecision}&maxTimestampDiff=${maxTimestampDiff}`;
+            const apiUrl = `${address}${key}&uuid=${uuid}&a=${asset1}&b=${asset2}&abPrecision=${abPrecision}&confPrecision=${confPrecision}&maxTimestampDiff=${maxTimestampDiff}`;
 
             responsePromises.push(axios.get(apiUrl).then(response => {
                 if (response.status === 200) {
